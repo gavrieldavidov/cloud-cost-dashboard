@@ -64,13 +64,15 @@ h2{font-size:15px;font-weight:600;margin:0 0 12px;color:var(--ink)}
 .legend{display:flex;gap:16px;font-size:12px;color:var(--ink2);margin-bottom:8px;flex-wrap:wrap}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
-.gridjs-wrapper{box-shadow:none!important;border-radius:0!important;border:0!important}
-.gridjs-table{font-size:12.5px}
+.gridjs-wrapper{box-shadow:none!important;border-radius:0!important;border:0!important;overflow-x:auto!important}
+.gridjs-container{width:100%!important}
+.gridjs-table{font-size:12.5px;min-width:100%}
 .gridjs-th,.gridjs-td{padding:6px 8px!important;direction:rtl;text-align:right!important}
 .gridjs-td{border-bottom:1px solid var(--line)!important}
 .gridjs-th{background:transparent!important;border-bottom:1px solid var(--line2)!important;color:var(--ink2)!important;font-weight:500!important}
 .gridjs-search-input{font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;width:160px}
 .gridjs-pagination{font-size:12px;color:var(--ink2)}
+.gridjs-notfound{color:var(--ink3);font-size:13px;padding:16px;text-align:center}
 .gridjs-tr.clickable-row{cursor:pointer;transition:background-color .1s}
 .gridjs-tr.clickable-row:hover{background:rgba(60,52,137,.04)!important}
 .gridjs-tr.clickable-row:hover .gridjs-td{background:transparent!important}
@@ -121,7 +123,7 @@ canvas{max-width:100%}
 <div class="row full"><div class="card"><div class="hdr"><h2>עלות יומית — 30 יום אחרונים</h2><span class="tag">USD · יומיים אחרונים מודגשים</span></div><div class="legend"><span><i style="background:#185fa5"></i>עלות יומית</span><span><i style="background:#888;border-radius:0;width:14px;height:2px"></i>ממוצע 14 יום (בייסליין)</span><span><i style="background:#a32d2d"></i>חלון יומיים אחרון</span><span><i style="background:rgba(0,0,0,.18);border-radius:0;width:14px;height:8px"></i>נתון חלקי (לא לסיכום)</span></div><div style="position:relative;height:240px"><canvas id="trend"></canvas></div></div></div>
 <div class="row"><div class="card"><div class="hdr"><h2>אנומליות שירותים — יומיים אחרונים מול בייסליין</h2><span class="tag">לחץ שורה לפירוט</span></div><div id="anom-svc"></div><div class="note">NEW = שירות שלא הופיע בבייסליין. ▸ = יש drill-down.</div></div><div class="card"><div class="hdr"><h2>פירוט לפי שירות</h2><span class="tag">סך עלות</span></div><ul class="bars" id="svc-bars"></ul></div></div>
 <div class="row"><div class="card"><div class="hdr"><h2 id="rg-anom-title">Resource Groups — אנומליות יומיים אחרונים</h2><span class="tag">לחץ שורה לפירוט</span></div><div id="anom-rg"></div></div><div class="card"><div class="hdr"><h2 id="rg-bars-title">Top Resource Groups</h2><span class="tag">סך עלות</span></div><ul class="bars" id="rg-bars"></ul></div></div>
-<div class="row full" id="resource-anom-section"><div class="card"><div class="hdr"><h2>Resource Names — אנומליות יומיים אחרונים</h2><span class="tag">רזולוציית משאב בודד · לחץ שורה לפירוט</span></div><div id="anom-resource"></div><div class="note">פירוט ברמת המשאב הספציפי (VM / disk / log analytics workspace וכו'). זמין ללקוחות Azure.</div></div></div>
+<div class="row full" id="resource-anom-section" style="display:none"><div class="card"><div class="hdr"><h2>Resource Names — אנומליות יומיים אחרונים</h2><span class="tag">רזולוציית משאב בודד · לחץ שורה לפירוט</span></div><div id="anom-resource" style="min-height:40px"></div><div class="note">פירוט ברמת המשאב הספציפי (VM / disk / log analytics workspace וכו'). זמין ללקוחות Azure.</div></div></div>
 <div class="row even"><div class="card"><div class="hdr"><h2 id="sub-bars-title">Subscriptions</h2><span class="tag">סך עלות</span></div><ul class="bars" id="sub-bars"></ul></div><div class="card"><div class="hdr"><h2>Regions</h2><span class="tag">סך עלות</span></div><ul class="bars" id="reg-bars"></ul></div></div>
 <div class="foot"><div>נתונים מ-CloudHiro · Apache Superset · Athena database 23 · schema cloudteam3</div><div>הדשבורד נוצר ע"י משימה מתוזמנת. לרענון מיידי בקש מ-Claude "תרענן את הדשבורד".</div></div>
 </div>
@@ -212,14 +214,16 @@ function render(cid){
   renderBars('rg-bars',D.rgs||[],'rg','cost');
   renderBars('sub-bars',D.subs||[],'sub','cost');
   renderBars('reg-bars',D.regions||[],'region','cost');
-  new gridjs.Grid({columns:[{name:'שירות',data:r=>r.cat,width:'40%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'20%'},{name:'בייסליין',data:r=>fmtUSDp(r.base_avg),width:'20%'},{name:'Δ %',data:r=>gridjs.html(pillFor(r)),width:'20%'}],data:D.anom_svc||[],sort:true,search:true,pagination:{enabled:true,limit:8},style:{table:{width:'100%'}}}).render(freshGrid('anom-svc'));
-  wireRowClicks('anom-svc',D.anom_svc||[],r=>({dimLabel:'שירות',name:r.cat,baseValue:r.base_avg,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:'resource_name'}));
-  new gridjs.Grid({columns:[{name:rgsLabel,data:r=>r.rg,width:'45%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'18%'},{name:'בייסליין',data:r=>fmtUSDp(r.base),width:'18%'},{name:'Δ %',data:r=>gridjs.html(pillForRg(r)),width:'19%'}],data:D.anom_rg||[],sort:true,search:true,pagination:{enabled:true,limit:8},style:{table:{width:'100%'}}}).render(freshGrid('anom-rg'));
-  wireRowClicks('anom-rg',D.anom_rg||[],r=>({dimLabel:rgsLabel,name:r.rg,baseValue:r.base,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:tm.cloud==='aws'?'product_name':'meter_category'}));
-  if(D.anom_resource&&D.anom_resource.length){
-    new gridjs.Grid({columns:[{name:'Resource Name',data:r=>r.rname,width:'45%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'18%'},{name:'בייסליין',data:r=>fmtUSDp(r.base),width:'18%'},{name:'Δ %',data:r=>gridjs.html(pillForRg(r)),width:'19%'}],data:D.anom_resource,sort:true,search:true,pagination:{enabled:true,limit:10},style:{table:{width:'100%'}}}).render(freshGrid('anom-resource'));
-    wireRowClicks('anom-resource',D.anom_resource,r=>({dimLabel:'Resource',name:r.rname,baseValue:r.base,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:'meter_name'}));
-  }
+  requestAnimationFrame(()=>{
+    new gridjs.Grid({columns:[{name:'שירות',data:r=>r.cat,width:'40%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'20%'},{name:'בייסליין',data:r=>fmtUSDp(r.base_avg),width:'20%'},{name:'Δ %',data:r=>gridjs.html(pillFor(r)),width:'20%'}],data:D.anom_svc||[],sort:true,search:true,pagination:{enabled:true,limit:8},style:{table:{width:'100%'}}}).render(freshGrid('anom-svc'));
+    wireRowClicks('anom-svc',D.anom_svc||[],r=>({dimLabel:'שירות',name:r.cat,baseValue:r.base_avg,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:'resource_name'}));
+    new gridjs.Grid({columns:[{name:rgsLabel,data:r=>r.rg,width:'45%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'18%'},{name:'בייסליין',data:r=>fmtUSDp(r.base),width:'18%'},{name:'Δ %',data:r=>gridjs.html(pillForRg(r)),width:'19%'}],data:D.anom_rg||[],sort:true,search:true,pagination:{enabled:true,limit:8},style:{table:{width:'100%'}}}).render(freshGrid('anom-rg'));
+    wireRowClicks('anom-rg',D.anom_rg||[],r=>({dimLabel:rgsLabel,name:r.rg,baseValue:r.base,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:tm.cloud==='aws'?'product_name':'meter_category'}));
+    if(D.anom_resource&&D.anom_resource.length){
+      new gridjs.Grid({columns:[{name:'Resource Name',data:r=>r.rname,width:'45%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'18%'},{name:'בייסליין',data:r=>fmtUSDp(r.base),width:'18%'},{name:'Δ %',data:r=>gridjs.html(pillForRg(r)),width:'19%'}],data:D.anom_resource,sort:true,search:true,pagination:{enabled:true,limit:10},style:{table:{width:'100%'}}}).render(freshGrid('anom-resource'));
+      wireRowClicks('anom-resource',D.anom_resource,r=>({dimLabel:'Resource',name:r.rname,baseValue:r.base,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:'meter_name'}));
+    }
+  });
 }
 function wireRowClicks(elId,data,mapToPayload){
   setTimeout(()=>{
