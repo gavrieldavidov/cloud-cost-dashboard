@@ -45,9 +45,9 @@ h2{font-size:15px;font-weight:600;margin:0 0 12px;color:var(--ink)}
 .kpi .delta.up{color:var(--up)}
 .kpi .delta.down{color:var(--down)}
 .kpi .delta.flat{color:var(--ink3)}
-.row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px;align-items:start}
+.row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px}
 .row.full{grid-template-columns:1fr}
-.row.even{grid-template-columns:1fr 1fr;align-items:start}
+.row.even{grid-template-columns:1fr 1fr}
 @media(max-width:780px){.row,.row.even{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .card .hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
@@ -210,10 +210,10 @@ function render(cid){
   const colors=(D.daily||[]).map(r=>r.cost<base*0.5?'rgba(0,0,0,.18)':(last2Set.has(r.d)?'#a32d2d':'#185fa5'));
   if(trendChart){trendChart.destroy();trendChart=null;}
   trendChart=new Chart(document.getElementById('trend'),{type:'bar',data:{labels,datasets:[{label:'עלות יומית',data,backgroundColor:colors,borderRadius:2,categoryPercentage:.95,barPercentage:.95},{label:'בייסליין 14י',type:'line',data:labels.map(()=>base),borderColor:'#888',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtUSDp(c.raw)+(c.raw<base*.5?' (נתון חלקי)':'')}}},scales:{x:{ticks:{maxTicksLimit:10,autoSkip:true,font:{size:10}},grid:{display:false}},y:{ticks:{callback:v=>'$'+(v/1000).toFixed(1)+'k',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}}}}});
-  renderBars('svc-bars',D.services||[],'cat','cost');
-  renderBars('rg-bars',D.rgs||[],'rg','cost');
-  renderBars('sub-bars',D.subs||[],'sub','cost');
-  renderBars('reg-bars',D.regions||[],'region','cost');
+  renderBars('svc-bars',(D.services||[]).slice(0,8),'cat','cost');
+  renderBars('rg-bars',(D.rgs||[]).slice(0,8),'rg','cost');
+  renderBars('sub-bars',(D.subs||[]).slice(0,5),'sub','cost');
+  renderBars('reg-bars',(D.regions||[]).slice(0,5),'region','cost');
   requestAnimationFrame(()=>{
     new gridjs.Grid({columns:[{name:'שירות',data:r=>r.cat,width:'40%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'20%'},{name:'בייסליין',data:r=>fmtUSDp(r.base_avg),width:'20%'},{name:'Δ %',data:r=>gridjs.html(pillFor(r)),width:'20%'}],data:D.anom_svc||[],sort:true,search:true,pagination:{enabled:true,limit:8},style:{table:{width:'100%'}}}).render(freshGrid('anom-svc'));
     wireRowClicks('anom-svc',D.anom_svc||[],r=>({dimLabel:'שירות',name:r.cat,baseValue:r.base_avg,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:'resource_name'}));
