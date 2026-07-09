@@ -1,0 +1,251 @@
+<!doctype html><script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "IEC Azure Cost Dashboard",
+  "schemaVersion": 1,
+  "description": "דשבורד עלויות ענן — IEC. KPI, מגמת עלות יומית, אנומליות (שירות / RG / משאב) עם drill-down בלחיצה. נתונים מ-CloudHiro.",
+  "mcpTools": [],
+  "mcpServerNames": []
+}
+</script>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cloud Cost Pulse · IEC</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs@5.0.2/dist/theme/mermaid.min.css" integrity="sha384-jZvDSsmGB9oGGT/4l9bHXGoAv1OxvG/cFmSo0dZaSqmBgvQTKDBFAMftlXTmMbNW" crossorigin="anonymous">
+<style>
+:root{color-scheme:light;--bg:#f7f7f5;--card:#fff;--ink:#1a1a1a;--ink2:#5a5a5a;--ink3:#8a8a8a;--line:rgba(0,0,0,.08);--line2:rgba(0,0,0,.16);--up:#a32d2d;--up-bg:#fcebeb;--down:#0f6e56;--down-bg:#e1f5ee;--neut:#185fa5;--neut-bg:#e6f1fb;--warn:#854f0b;--warn-bg:#faeeda;--accent:#3c3489;--accent-bg:#eeedfe}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,"Noto Sans Hebrew",sans-serif;font-size:14px;line-height:1.55}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 24px 56px}
+h1{font-size:20px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:15px;font-weight:600;margin:0 0 12px;color:var(--ink)}
+.sub{font-size:13px;color:var(--ink2);margin:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:14px}
+.meta{font-size:12px;color:var(--ink3);text-align:left}
+.meta b{color:var(--ink2);font-weight:500}
+.tabs{display:flex;gap:2px;margin:0 0 18px;border-bottom:1px solid var(--line2);padding-bottom:0}
+.tab{background:transparent;border:0;border-bottom:2px solid transparent;padding:9px 16px 10px;font:inherit;color:var(--ink2);cursor:pointer;font-size:13.5px;font-weight:500;display:inline-flex;align-items:center;gap:8px;transition:color .12s,border-color .12s}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .cloud-tag{font-size:10px;font-weight:500;padding:1px 6px;border-radius:3px;letter-spacing:.04em;text-transform:uppercase}
+.tab .cloud-tag.azure{background:#e6f1fb;color:#185fa5}
+.tab .cloud-tag.aws{background:#fff3e0;color:#9c5300}
+.alerts{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.alert{background:var(--up-bg);border-right:3px solid var(--up);padding:10px 14px;border-radius:6px;display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px}
+.alert.warn{background:var(--warn-bg);border-right-color:var(--warn)}
+.alert.info{background:var(--neut-bg);border-right-color:var(--neut)}
+.alert b{font-weight:600}
+.alert .tag{font-size:11px;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,.06);color:var(--ink2);font-weight:500;white-space:nowrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .lbl{font-size:11.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;font-weight:500}
+.kpi .val{font-size:22px;font-weight:600;letter-spacing:-.02em;direction:ltr;text-align:right;color:var(--ink)}
+.kpi .delta{font-size:12px;margin-top:4px;font-weight:500}
+.kpi .delta.up{color:var(--up)}
+.kpi .delta.down{color:var(--down)}
+.kpi .delta.flat{color:var(--ink3)}
+.row{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px}
+.row.full{grid-template-columns:1fr}
+.row.even{grid-template-columns:1fr 1fr}
+@media(max-width:780px){.row,.row.even{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card .hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.card .hdr h2{margin:0}
+.card .hdr .tag{font-size:11px;color:var(--ink3);font-weight:400}
+.bars{margin:0;padding:0;list-style:none}
+.bars li{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.bars li:last-child{border-bottom:0}
+.bars .row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.bars .name{font-weight:500;color:var(--ink)}
+.bars .num{font-variant-numeric:tabular-nums;color:var(--ink2);font-size:12.5px;direction:ltr}
+.bars .track{height:6px;background:rgba(0,0,0,.05);border-radius:3px;overflow:hidden}
+.bars .fill{height:100%;background:var(--neut);border-radius:3px}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--ink2);margin-bottom:8px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.gridjs-wrapper{box-shadow:none!important;border-radius:0!important;border:0!important;overflow-x:auto!important}
+.gridjs-container{width:100%!important}
+.gridjs-table{font-size:12.5px;min-width:100%}
+.gridjs-th,.gridjs-td{padding:6px 8px!important;direction:rtl;text-align:right!important}
+.gridjs-td{border-bottom:1px solid var(--line)!important}
+.gridjs-th{background:transparent!important;border-bottom:1px solid var(--line2)!important;color:var(--ink2)!important;font-weight:500!important}
+.gridjs-search-input{font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;width:160px}
+.gridjs-pagination{font-size:12px;color:var(--ink2)}
+.gridjs-notfound{color:var(--ink3);font-size:13px;padding:16px;text-align:center}
+.gridjs-tr.clickable-row{cursor:pointer;transition:background-color .1s}
+.gridjs-tr.clickable-row:hover{background:rgba(60,52,137,.04)!important}
+.gridjs-tr.clickable-row:hover .gridjs-td{background:transparent!important}
+.gridjs-tr.has-drill td:first-child::before{content:"\25b8 ";color:var(--accent);font-weight:bold;margin-left:2px}
+.pill{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:500;font-variant-numeric:tabular-nums;direction:ltr}
+.pill.down{background:var(--down-bg);color:var(--down)}
+.pill.new{background:var(--accent-bg);color:var(--accent)}
+.pill.up{background:var(--up-bg);color:var(--up)}
+.pill.flat{background:rgba(0,0,0,.05);color:var(--ink2)}
+.foot{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--ink3);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.foot a{color:var(--neut)}
+.note{font-size:12px;color:var(--ink3);margin-top:6px}
+canvas{max-width:100%}
+.modal-bd{position:fixed;inset:0;background:rgba(20,20,20,.45);z-index:90;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal-bd.open{display:flex}
+.modal{background:var(--card);border-radius:12px;width:100%;max-width:780px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:18px 20px;direction:rtl}
+.modal .mh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.modal .mh h3{margin:0 0 4px;font-size:16px;font-weight:600}
+.modal .mh .sub{font-size:12.5px;color:var(--ink2)}
+.modal .close{background:transparent;border:1px solid var(--line2);border-radius:6px;width:30px;height:30px;cursor:pointer;color:var(--ink2);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center}
+.modal .close:hover{background:var(--bg)}
+.modal .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px;padding:10px;background:var(--bg);border-radius:8px}
+.modal .summary .item{font-size:11.5px}
+.modal .summary .item .lbl{color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;font-size:10.5px;margin-bottom:2px}
+.modal .summary .item .val{font-weight:600;font-size:14px;direction:ltr;text-align:right}
+.modal .summary .item.delta-up .val{color:var(--up)}
+.modal .summary .item.delta-down .val{color:var(--down)}
+.modal h4{font-size:13px;font-weight:600;margin:14px 0 8px;color:var(--ink2)}
+.modal .interp{font-size:13px;color:var(--ink);background:var(--accent-bg);border-right:3px solid var(--accent);padding:8px 12px;border-radius:6px;margin-bottom:8px;line-height:1.6}
+.modal .interp.empty{background:var(--bg);border-right-color:var(--line2);color:var(--ink2)}
+.modal .chart-wrap{position:relative;height:180px;background:var(--bg);border-radius:8px;padding:8px}
+.modal table.bd{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+.modal table.bd th,.modal table.bd td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line)}
+.modal table.bd th{font-weight:500;color:var(--ink2);font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+.modal table.bd td.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
+.modal .empty-state{padding:20px;text-align:center;color:var(--ink3);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="head">
+<div><h1 id="page-title">Cloud Cost Pulse</h1><p class="sub" id="page-sub">דשבורד אנומליות ועלויות רב-לקוחי — מתעדכן אוטומטית</p></div>
+<div class="meta"><div>טבלה: <b id="m-table"></b></div><div>יום אחרון מלא: <b id="m-last"></b></div><div>בייסליין: <b id="m-base"></b></div><div>עודכן: <b id="m-gen"></b></div></div>
+</div>
+<div class="tabs" id="tabs"></div>
+<div class="alerts" id="alerts"></div>
+<div class="kpis" id="kpis"></div>
+<div class="row full"><div class="card"><div class="hdr"><h2>עלות יומית — 30 יום אחרונים</h2><span class="tag">USD · יומיים אחרונים מודגשים</span></div><div class="legend"><span><i style="background:#185fa5"></i>עלות יומית</span><span><i style="background:#888;border-radius:0;width:14px;height:2px"></i>ממוצע 14 יום (בייסליין)</span><span><i style="background:#a32d2d"></i>חלון יומיים אחרון</span><span><i style="background:rgba(0,0,0,.18);border-radius:0;width:14px;height:8px"></i>נתון חלקי (לא לסיכום)</span></div><div style="position:relative;height:240px"><canvas id="trend"></canvas></div></div></div>
+<div class="row"><div class="card"><div class="hdr"><h2>אנומליות שירותים — יומיים אחרונים מול בייסליין</h2><span class="tag">לחץ שורה לפירוט</span></div><div id="anom-svc"></div><div class="note">NEW = שירות שלא הופיע בבייסליין. ▸ = יש drill-down.</div></div><div class="card"><div class="hdr"><h2>פירוט לפי שירות</h2><span class="tag">סך עלות</span></div><ul class="bars" id="svc-bars"></ul></div></div>
+<div class="row"><div class="card"><div class="hdr"><h2 id="rg-anom-title">Resource Groups — אנומליות יומיים אחרונים</h2><span class="tag">לחץ שורה לפירוט</span></div><div id="anom-rg"></div></div><div class="card"><div class="hdr"><h2 id="rg-bars-title">Top Resource Groups</h2><span class="tag">סך עלות</span></div><ul class="bars" id="rg-bars"></ul></div></div>
+<div class="row full" id="resource-anom-section" style="display:none"><div class="card"><div class="hdr"><h2>Resource Names — אנומליות יומיים אחרונים</h2><span class="tag">רזולוציית משאב בודד · לחץ שורה לפירוט</span></div><div id="anom-resource" style="min-height:40px"></div><div class="note">פירוט ברמת המשאב הספציפי (VM / disk / log analytics workspace וכו'). זמין ללקוחות Azure.</div></div></div>
+<div class="row even"><div class="card"><div class="hdr"><h2 id="sub-bars-title">Subscriptions</h2><span class="tag">סך עלות</span></div><ul class="bars" id="sub-bars"></ul></div><div class="card"><div class="hdr"><h2>Regions</h2><span class="tag">סך עלות</span></div><ul class="bars" id="reg-bars"></ul></div></div>
+<div class="foot"><div>נתונים מ-CloudHiro · Apache Superset · Athena database 23 · schema cloudteam3</div><div>הדשבורד נוצר ע"י משימה מתוזמנת. לרענון מיידי בקש מ-Claude "תרענן את הדשבורד".</div></div>
+</div>
+<div id="modal-bd" class="modal-bd"><div class="modal"><div class="mh"><div><h3 id="modal-title"></h3><div class="sub" id="modal-sub"></div></div><button class="close" id="modal-close">✕</button></div><div class="summary" id="modal-summary"></div><div class="interp empty" id="modal-interp"></div><div class="chart-wrap"><canvas id="modal-chart"></canvas></div><h4 id="modal-bd-title"></h4><div id="modal-bd-content"></div></div></div>
+<script>window.__CHDATA__={"active":"iec","order":["iec"],"customers":{"iec":{"tab_meta":{"label":"IEC","cloud":"azure"},"meta":{"last_complete_day":"2026-07-07","generated_at":"2026-07-09 06:09 UTC","table":"azr_bill_partner_iec_mat","last2_window":["2026-07-06","2026-07-07"],"baseline_window":["2026-06-22","2026-07-05"]},"headline":[{"bucket":"last2","cost":5798.224548469452},{"bucket":"prev2","cost":6238.988861441561},{"bucket":"base14_avg","cost":3119.586051742478},{"bucket":"mtd","cost":21416.025170545174},{"bucket":"prev_month_full","cost":93288.30309112559}],"daily":[{"d":"2026-06-22","cost":3184.524021347804},{"d":"2026-06-23","cost":3147.3710063072717},{"d":"2026-06-24","cost":3199.7498661460386},{"d":"2026-06-25","cost":3207.6474715663485},{"d":"2026-06-26","cost":2989.350593358376},{"d":"2026-06-27","cost":2989.4939156636065},{"d":"2026-06-28","cost":3090.244748230157},{"d":"2026-06-29","cost":3130.389699267174},{"d":"2026-06-30","cost":3117.6327804313355},{"d":"2026-07-01","cost":3153.297972960004},{"d":"2026-07-02","cost":3145.3300982031506},{"d":"2026-07-03","cost":3080.183689470502},{"d":"2026-07-04","cost":3070.6019968931514},{"d":"2026-07-05","cost":3168.3868645483644},{"d":"2026-07-06","cost":3146.892898096572},{"d":"2026-07-07","cost":2651.331650372847}],"services":[{"cat":"virtual machines","cost":3045.8332798292395},{"cat":"storage","cost":2952.201336909665},{"cat":"azure app service","cost":2399.5450395196676},{"cat":"azure data factory v2","cost":2096.9477053801875},{"cat":"power bi embedded","cost":1970.383099079132},{"cat":"microsoft defender for cloud","cost":1346.2157740917842},{"cat":"virtual machine licenses","cost":852.574396558106},{"cat":"sql database","cost":838.4734770697542},{"cat":"virtual network","cost":690.1219896180852},{"cat":"log analytics","cost":669.3773247990857},{"cat":"azure devops","cost":594.1509677171707},{"cat":"virtual machines licenses","cost":430.539765718393},{"cat":"backup","cost":341.4690999891418},{"cat":"bandwidth","cost":321.27354643348906},{"cat":"event hubs","cost":231.5343904002828},{"cat":"expressroute","cost":228.6937488913536},{"cat":"redis cache","cost":226.42399662733078},{"cat":"vpn gateway","cost":207.06840181350708},{"cat":"sql managed instance","cost":196.5581820011139},{"cat":"azure synapse analytics","cost":159.91696398705244}],"rgs":[{"rg":"dmz_masa-rg","cost":1477.4742527055027},{"rg":"dmz_goanywhere-rg","cost":1251.2056697214773},{"rg":"dmz_iecportal-rg","cost":1224.7483043321886},{"rg":"prod_infra-rg","cost":1102.6170160926208},{"rg":"test-masa-rg","cost":1014.0225358144073},{"rg":"dmz_onelayer-rg","cost":962.1021367729411},{"rg":"iec-ic-hub-fw-rg","cost":913.442690011853},{"rg":"test_trk-rg","cost":772.2117795063764},{"rg":"dev_trk-rg","cost":763.0283666561884},{"rg":"dmz_traklin-rg","cost":742.930658625677},{"rg":"microsoft.visualstudio","cost":594.1509677171707},{"rg":"dmz_equlity-rg","cost":545.5183619026013},{"rg":"dev-masa-rg","cost":544.7572030842351},{"rg":"dmz_iecazurefw-rg","cost":459.3149351878726},{"rg":"test_traklin-rg","cost":431.1744638588937},{"rg":"dmz_infra-rg","cost":408.6906954808292},{"rg":"dmz_gefen-rg","cost":384.9579358799124},{"rg":"dev-iecyber-rg","cost":346.72845893388984},{"rg":"dmz_sentinel-rg","cost":346.29172059142286},{"rg":"dmz_splunk_iaas_logs-rg","cost":303.7828020380031}],"subs":[{"sub":"domain dmz","cost":11133.867131810584},{"sub":"domain test","cost":3311.2388187445467},{"sub":"domain dev","cost":2022.1623021843684},{"sub":"domain prod","cost":1603.1665579161345},{"sub":"connectivity","cost":1025.760320714212},{"sub":"iecyber","cost":655.3189355107962},{"sub":"devops","cost":589.2917301645502},{"sub":"prod elastic subscription","cost":254.99749518088896},{"sub":"test tritech subscription","cost":189.4939530326538},{"sub":"connectivity ne","cost":130.2333104593729}],"regions":[{"region":"northeurope","cost":16231.020337538874},{"region":"westeurope","cost":3488.745689083116},{"region":"israelcentral","cost":1245.6153051709207},{"region":"eastus","cost":201.03411518140334},{"region":"all regions","cost":192.3394804687536},{"region":"swedencentral","cost":42.55758888022865},{"region":"centralus","cost":7.009934917265127},{"region":"southcentralus","cost":6.239072428936197},{"region":"canadacentral","cost":0.7328469026940923},{"region":"Unknown","cost":0.7307999730110168}],"anom_svc":[{"cat":"power bi embedded","avg2":218.04747080802917,"base_avg":298.7314479010446,"delta":-80.68397709301541,"pct":-27.008866210745293,"daily_30d":[],"breakdown":[]},{"cat":"azure devops","avg2":47.61580637097359,"base_avg":99.41806441545486,"delta":-51.80225804448128,"pct":-52.10547836458225,"daily_30d":[],"breakdown":[]},{"cat":"power apps","avg2":0.0,"base_avg":30.599999564034597,"delta":-30.599999564034597,"pct":-100.0,"daily_30d":[],"breakdown":[]},{"cat":"virtual machines","avg2":412.54261232947465,"base_avg":440.5167299626545,"delta":-27.974117633179844,"pct":-6.350296306692233,"daily_30d":[],"breakdown":[]},{"cat":"log analytics","avg2":90.56506765991935,"base_avg":111.26115723206385,"delta":-20.6960895721445,"pct":-18.60136105629161,"daily_30d":[],"breakdown":[]},{"cat":"virtual network","avg2":95.91886144476851,"base_avg":75.50502135378534,"delta":20.41384009098317,"pct":27.036400659146032,"daily_30d":[],"breakdown":[]},{"cat":"azure app service","avg2":329.03484938293695,"base_avg":347.19673646986485,"delta":-18.16188708692789,"pct":-5.231007431575977,"daily_30d":[],"breakdown":[]},{"cat":"storage","avg2":425.682102167012,"base_avg":413.32821274459366,"delta":12.35388942241832,"pct":2.9888812429196823,"daily_30d":[],"breakdown":[]},{"cat":"github","avg2":8.880967140197754,"base_avg":18.14254801613944,"delta":-9.261580875941686,"pct":-51.04895336477914,"daily_30d":[],"breakdown":[]},{"cat":"sql database","avg2":112.682793158805,"base_avg":121.42767803843266,"delta":-8.744884879627662,"pct":-7.201722886325676,"daily_30d":[],"breakdown":[]}],"anom_rg":[{"rg":"test_trk-rg","avg2":70.39174691076562,"base":126.24509010205226,"delta":-55.85334319128664,"pct":-44.24199241818964,"daily_30d":[],"breakdown":[]},{"rg":"microsoft.visualstudio","avg2":47.61580637097359,"base":99.41806441545486,"delta":-51.80225804448128,"pct":-52.10547836458225,"daily_30d":[],"breakdown":[]},{"rg":"powerappsforms-rg","avg2":0.0,"base":30.599999564034597,"delta":-30.599999564034597,"pct":-100.0,"daily_30d":[],"breakdown":[]},{"rg":"prod_infra-rg","avg2":160.75157193583755,"base":136.25123319385108,"delta":24.500338741986468,"pct":17.98173724206127,"daily_30d":[],"breakdown":[]},{"rg":"dmz_sentinel-rg","avg2":32.83654928860095,"base":55.77959925634712,"delta":-22.94304996774617,"pct":-41.1316149158879,"daily_30d":[],"breakdown":[]},{"rg":"dmz_iecazurefw-rg","avg2":65.34493194331495,"base":47.42227456504249,"delta":17.922657378272454,"pct":37.79375313111659,"daily_30d":[],"breakdown":[]},{"rg":"test-masa-rg","avg2":135.4091280770623,"base":151.98136245862958,"delta":-16.572234381567284,"pct":-10.904122790765456,"daily_30d":[],"breakdown":[]},{"rg":"prod_jeenai-rg","avg2":17.41798911592923,"base":4.4398035281389765,"delta":12.978185587790254,"pct":292.3144122377481,"daily_30d":[],"breakdown":[]},{"rg":"dmz_masa-rg","avg2":211.1793831307745,"base":222.6881035853527,"delta":-11.508720454578196,"pct":-5.168089479987462,"daily_30d":[],"breakdown":[]},{"rg":"dmz_onelayer-rg","avg2":131.41684941670144,"base":140.86615978165395,"delta":-9.44931036495251,"pct":-6.708005939538052,"daily_30d":[],"breakdown":[]}],"anom_resource":[{"rname":"testtrkpowerbi","avg2":65.95576858520508,"base":121.68000057765416,"delta":-55.72423199244908,"pct":-45.79571969749195,"daily_30d":[],"breakdown":[]},{"rname":"iecpabillings","avg2":0.0,"base":30.599999564034597,"delta":-30.599999564034597,"pct":-100.0,"daily_30d":[],"breakdown":[]},{"rname":"prodcommvaultstg002lrs","avg2":99.08067404043476,"base":76.81771837477285,"delta":22.262955665661906,"pct":28.981537250360617,"daily_30d":[],"breakdown":[]},{"rname":"devtrkpowerbi","avg2":50.43170237541199,"base":70.97144644601005,"delta":-20.53974407059806,"pct":-28.94085593453871,"daily_30d":[],"breakdown":[]},{"rname":"fwazure","avg2":65.99728269029583,"base":45.84142757992543,"delta":20.155855110370403,"pct":43.968646210304584,"daily_30d":[],"breakdown":[]},{"rname":"trk-adf-d","avg2":19.798654874803958,"base":3.817246180827161,"delta":15.981408693976796,"pct":418.66329644250965,"daily_30d":[],"breakdown":[]},{"rname":"masa-adf-t","avg2":74.92369182442917,"base":85.86461337726334,"delta":-10.940921552834169,"pct":-12.742061161753613,"daily_30d":[],"breakdown":[]},{"rname":"wsrv1005","avg2":26.616943997330964,"base":16.259852458656887,"delta":10.357091538674077,"pct":63.697327912467436,"daily_30d":[],"breakdown":[]},{"rname":"masa-la","avg2":21.681936264038086,"base":28.180728026798793,"delta":-6.498791762760707,"pct":-23.061120907098655,"daily_30d":[],"breakdown":[]},{"rname":"iec-ne-test-tritech-mysql-server","avg2":0.05141935497522354,"base":5.768582113885453,"delta":-5.71716275891023,"pct":-99.10863096060551,"daily_30d":[],"breakdown":[]},{"rname":"iecportal-la","avg2":39.14626693725586,"base":33.955815587724956,"delta":5.190451349530903,"pct":15.285898040414772,"daily_30d":[],"breakdown":[]},{"rname":"devgetelectric-am","avg2":19.8449999243021,"base":15.49124990616526,"delta":4.353750018136841,"pct":28.104575450713764,"daily_30d":[],"breakdown":[]},{"rname":"iecsentinellaws","avg2":56.751922607421875,"base":52.84396001270839,"delta":3.9079625947134815,"pct":7.39528716957181,"daily_30d":[],"breakdown":[]},{"rname":"dmz-masa-sp","avg2":11.393721707165241,"base":15.227617456444673,"delta":-3.8338957492794314,"pct":-25.17725284500656,"daily_30d":[],"breakdown":[]},{"rname":"dmziecfsgoanywhere","avg2":117.2165062814013,"base":113.87486943806906,"delta":3.341636843332239,"pct":2.9344813827862093,"daily_30d":[],"breakdown":[]},{"rname":"wsrv1002","avg2":6.932516914266671,"base":9.953866749593415,"delta":-3.0213498353267436,"pct":-30.35352904890109,"daily_30d":[],"breakdown":[]},{"rname":"visualstudio-organizations-ieconlinedev","avg2":19.753549098968506,"base":22.761291027069092,"delta":-3.007741928100586,"pct":-13.214285272850294,"daily_30d":[],"breakdown":[]},{"rname":"gefen-adf-t","avg2":23.93245612117039,"base":20.966418596326744,"delta":2.966037524843646,"pct":14.146610262580978,"daily_30d":[],"breakdown":[]},{"rname":"splkjobstrwb7kk6kh6lqom","avg2":20.86562010191978,"base":18.432002963110627,"delta":2.4336171388091543,"pct":13.203215861454328,"daily_30d":[],"breakdown":[]},{"rname":"masa-adf-sql","avg2":15.713573858141899,"base":13.583896712533065,"delta":2.1296771456088344,"pct":15.677954497724548,"daily_30d":[],"breakdown":[]}]}}};</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridjs@5.0.2/dist/gridjs.umd.js" integrity="sha384-/XXDzxe4FsGiAe50i/u9pY/Vy/uX654MHB1xoc1BJNnH1WXHhqHga9g3q5tF4gj7" crossorigin="anonymous"></script>
+<script>(()=>{
+const ALL=window.__CHDATA__;
+const fmtUSD=n=>'$'+(Math.round(n)).toLocaleString('en-US');
+const fmtUSDp=n=>'$'+(Math.round(n*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtPct=n=>(n>0?'+':'')+n.toFixed(1)+'%';
+let trendChart=null,modalChart=null;
+function freshGrid(elId){const el=document.getElementById(elId);const f=el.cloneNode(false);el.parentNode.replaceChild(f,el);return f;}
+function renderTabs(){
+  const wrap=document.getElementById('tabs');
+  wrap.innerHTML=ALL.order.map(cid=>{const c=ALL.customers[cid],tm=c.tab_meta||{};return `<button class="tab" data-cid="${cid}"><span>${tm.label||cid}</span><span class="cloud-tag ${tm.cloud||''}">${(tm.cloud||'').toUpperCase()}</span></button>`;}).join('');
+  wrap.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>render(b.dataset.cid)));
+}
+function setActiveTab(cid){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.cid===cid));}
+function renderBars(elId,items,nk,vk){const max=items[0]?.[vk]||1;document.getElementById(elId).innerHTML=items.map(r=>{const p=(r[vk]/max)*100;return `<li><div class="row1"><span class="name">${r[nk]}</span><span class="num">${fmtUSDp(r[vk])}</span></div><div class="track"><div class="fill" style="width:${p}%"></div></div></li>`;}).join('');}
+function pillFor(r){if(r.base_avg===0&&r.avg2>0)return '<span class="pill new">NEW</span>';if(r.pct===null||r.pct===undefined)return '<span class="pill flat">--</span>';const c=r.pct>0?'up':(r.pct<0?'down':'flat');return `<span class="pill ${c}">${fmtPct(r.pct)}</span>`;}
+function pillForRg(r){if(r.base===0&&r.avg2>0)return '<span class="pill new">NEW</span>';if(r.pct===null||r.pct===undefined)return '<span class="pill flat">--</span>';const c=r.pct>0?'up':(r.pct<0?'down':'flat');return `<span class="pill ${c}">${fmtPct(r.pct)}</span>`;}
+function openModal(payload){
+  const bd=document.getElementById('modal-bd');
+  const baseValue=payload.baseValue,avg2=payload.avg2,delta=payload.delta,pct=payload.pct;
+  const isNew=baseValue===0&&avg2>0;
+  document.getElementById('modal-title').textContent=`${payload.dimLabel}: ${payload.name}`;
+  document.getElementById('modal-sub').textContent=payload.subLine||'';
+  const dCls=delta>0?'delta-up':(delta<0?'delta-down':'');
+  const pctText=pct===null||pct===undefined?(isNew?'NEW':'—'):fmtPct(pct);
+  document.getElementById('modal-summary').innerHTML=`<div class="item"><div class="lbl">ממוצע יומי כעת</div><div class="val">${fmtUSDp(avg2)}</div></div><div class="item"><div class="lbl">בייסליין יומי</div><div class="val">${fmtUSDp(baseValue)}</div></div><div class="item ${dCls}"><div class="lbl">Δ דולר/יום</div><div class="val">${delta>=0?'+':''}${fmtUSDp(delta)}</div></div><div class="item ${dCls}"><div class="lbl">Δ אחוז</div><div class="val">${pctText}</div></div>`;
+  const interp=document.getElementById('modal-interp');
+  const bd_rows=payload.breakdown||[];
+  let txt='';
+  if(isNew){txt=`המשאב <b>${payload.name}</b> חדש לחלוטין — לא הופיע בבייסליין. הוצאה חדשה של <b>${fmtUSDp(avg2)}/יום</b>. כדאי לבדוק האם זו הקצאה מכוונת או דליפה.`;}
+  else if(Math.abs(delta)<0.5){txt=`אין שינוי משמעותי ב-${payload.dimLabel}.`;}
+  else{const top=bd_rows.filter(b=>Math.abs(b.delta)>=Math.abs(delta)*0.15).slice(0,3);if(top.length){const dir=delta>0?'העלייה':'הירידה';const parts=top.map(b=>`<b>${b.name}</b> (${b.delta>0?'+':''}${fmtUSDp(b.delta)}/יום)`);txt=`${dir} נובעת בעיקר מ: ${parts.join(' · ')}.`;}else{txt=`שינוי של ${delta>=0?'+':''}${fmtUSDp(delta)}/יום מפוזר על תת-מימדים רבים.`;}}
+  interp.innerHTML=txt;
+  if(modalChart){modalChart.destroy();modalChart=null;}
+  const dailyData=payload.daily_30d||[];
+  const ctx=document.getElementById('modal-chart');
+  if(dailyData.length===0){ctx.parentElement.innerHTML='<div class="empty-state">אין נתוני trend זמינים למשאב זה</div>';}
+  else{ctx.parentElement.innerHTML='<canvas id="modal-chart"></canvas>';const last2Set=new Set(payload.last2_window||[]);const labels=dailyData.map(r=>Array.isArray(r)?r[0]:r.d);const data=dailyData.map(r=>Array.isArray(r)?r[1]:r.cost);const colors=labels.map(d=>last2Set.has(d)?'#a32d2d':'#185fa5');modalChart=new Chart(document.getElementById('modal-chart'),{type:'bar',data:{labels,datasets:[{label:'עלות יומית',data,backgroundColor:colors,borderRadius:2,categoryPercentage:.96,barPercentage:.92},{label:'בייסליין',type:'line',data:labels.map(()=>baseValue),borderColor:'#888',borderDash:[4,4],borderWidth:1.2,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtUSDp(c.raw)}}},scales:{x:{ticks:{maxTicksLimit:8,autoSkip:true,font:{size:9}},grid:{display:false}},y:{ticks:{callback:v=>'$'+(v>=1000?(v/1000).toFixed(1)+'k':Math.round(v)),font:{size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});}
+  document.getElementById('modal-bd-title').textContent=`פירוט לפי ${payload.subLabel||'תת-מימד'}`;
+  const bdEl=document.getElementById('modal-bd-content');
+  if(bd_rows.length===0){bdEl.innerHTML=`<div class="empty-state">אין פירוט תת-מימד זמין למשאב זה</div>`;}
+  else{bdEl.innerHTML=`<table class="bd"><thead><tr><th>שם</th><th>יומי כעת</th><th>בייסליין</th><th>Δ$</th><th>Δ%</th></tr></thead><tbody>${bd_rows.slice(0,6).map(b=>{const pc=b.delta>0?'up':(b.delta<0?'down':'flat');const ps=b.pct===null||b.pct===undefined?'--':fmtPct(b.pct);return `<tr><td>${b.name}</td><td class="num">${fmtUSDp(b.avg2)}</td><td class="num">${fmtUSDp(b.base_avg)}</td><td class="num"><span class="pill ${pc}">${b.delta>=0?'+':''}${fmtUSDp(b.delta)}</span></td><td class="num"><span class="pill ${pc}">${ps}</span></td></tr>`;}).join('')}</tbody></table>`;}
+  bd.classList.add('open');
+}
+function closeModal(){document.getElementById('modal-bd').classList.remove('open');if(modalChart){modalChart.destroy();modalChart=null;}}
+document.getElementById('modal-close').addEventListener('click',closeModal);
+document.getElementById('modal-bd').addEventListener('click',e=>{if(e.target.id==='modal-bd')closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function render(cid){
+  setActiveTab(cid);
+  const D=ALL.customers[cid];if(!D){console.warn('no',cid);return;}
+  const m=D.meta||{},tm=D.tab_meta||{};
+  const rgsLabel=tm.rgs_label||'Resource Groups',subsLabel=tm.subs_label||'Subscriptions';
+  document.getElementById('page-title').textContent=`${tm.label||cid} · Cloud Cost Pulse`;
+  document.getElementById('page-sub').textContent=`דשבורד אנומליות ועלויות (${(tm.cloud||'').toUpperCase()})`;
+  document.getElementById('m-table').textContent=m.table||'';
+  document.getElementById('m-last').textContent=m.last_complete_day||'';
+  document.getElementById('m-base').textContent=(m.baseline_window||['',''])[0]+' → '+(m.baseline_window||['',''])[1];
+  document.getElementById('m-gen').textContent=m.generated_at?new Date(m.generated_at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'—';
+  document.getElementById('rg-anom-title').textContent=`${rgsLabel} — אנומליות יומיים אחרונים`;
+  document.getElementById('rg-bars-title').textContent=`Top ${rgsLabel}`;
+  document.getElementById('sub-bars-title').textContent=`${subsLabel}`;
+  document.getElementById('resource-anom-section').style.display=(D.anom_resource&&D.anom_resource.length>0)?'':'none';
+  const H=Object.fromEntries((D.headline||[]).map(r=>[r.bucket,r.cost]));
+  const last2=H.last2||0,prev2=H.prev2||0,base=H.base14_avg||0,mtd=H.mtd||0;
+  const last2avg=last2/2,prev2avg=prev2/2;
+  const dPrev=prev2avg?((last2avg-prev2avg)/prev2avg)*100:0;
+  const dBase=base?((last2avg-base)/base)*100:0;
+  function kpi(l,v,d,c,s){return `<div class="kpi"><div class="lbl">${l}</div><div class="val">${v}</div>${d?`<div class="delta ${c}">${d}</div>`:''}${s?`<div class="delta flat">${s}</div>`:''}</div>`;}
+  document.getElementById('kpis').innerHTML=[kpi('עלות יומיים אחרונים',fmtUSD(last2),'ממוצע יומי '+fmtUSD(last2avg),'flat',(m.last2_window||['',''])[0]+' → '+(m.last2_window||['',''])[1]),kpi('שינוי מול יומיים קודמים',fmtPct(dPrev),'יומיים קודמים '+fmtUSD(prev2),dPrev>=0?'up':'down'),kpi('שינוי מול בייסליין 14 יום',fmtPct(dBase),'בייסליין '+fmtUSD(base)+'/יום',dBase>=0?'up':'down'),kpi('Month‑to‑Date',fmtUSD(mtd),'חודש קודם מלא '+fmtUSD(H.prev_month_full||0),'flat',(m.last2_window||['',''])[0]+' עד היום')].join('');
+  const alerts=[];
+  (D.anom_svc||[]).filter(r=>r.base_avg===0&&r.avg2>0).forEach(r=>alerts.push({lvl:'up',title:`שירות חדש בחיוב: ${r.cat}`,detail:`${fmtUSDp(r.avg2)}/יום ממוצע. לא היה כלל בבייסליין 14 יום.`}));
+  (D.anom_rg||[]).filter(r=>r.base===0&&r.avg2>0).forEach(r=>alerts.push({lvl:'up',title:`${rgsLabel} חדש: ${r.rg}`,detail:`${fmtUSDp(r.avg2)}/יום ממוצע. לא הופיע בבייסליין.`}));
+  (D.anom_rg||[]).filter(r=>r.base>50&&r.pct!==null&&r.pct>=15&&r.delta>=20).forEach(r=>alerts.push({lvl:'warn',title:`${rgsLabel} עם קפיצה: ${r.rg}`,detail:`Δ=+${fmtUSDp(r.delta)} (${fmtPct(r.pct)})/יום מול בייסליין ${fmtUSDp(r.base)}.`}));
+  (D.anom_resource||[]).filter(r=>r.base===0&&r.avg2>=20).forEach(r=>alerts.push({lvl:'up',title:`משאב חדש: ${r.rname}`,detail:`${fmtUSDp(r.avg2)}/יום ממוצע. לא הופיע בבייסליין.`}));
+  document.getElementById('alerts').innerHTML=alerts.length?alerts.map(a=>`<div class="alert ${a.lvl}"><div><b>${a.title}</b><div style="color:var(--ink2);margin-top:2px">${a.detail}</div></div><span class="tag">${a.lvl==='up'?'התרעה':a.lvl==='warn'?'בדיקה':'מידע'}</span></div>`).join(''):`<div class="alert info"><div><b>אין אנומליות חריגות</b><div style="color:var(--ink2);margin-top:2px">העלויות יציבות מול הבייסליין.</div></div><span class="tag">תקין</span></div>`;
+  const last2Set=new Set(m.last2_window||[]);
+  const labels=(D.daily||[]).map(r=>r.d),data=(D.daily||[]).map(r=>r.cost);
+  const colors=(D.daily||[]).map(r=>r.cost<base*0.5?'rgba(0,0,0,.18)':(last2Set.has(r.d)?'#a32d2d':'#185fa5'));
+  if(trendChart){trendChart.destroy();trendChart=null;}
+  trendChart=new Chart(document.getElementById('trend'),{type:'bar',data:{labels,datasets:[{label:'עלות יומית',data,backgroundColor:colors,borderRadius:2,categoryPercentage:.95,barPercentage:.95},{label:'בייסליין 14י',type:'line',data:labels.map(()=>base),borderColor:'#888',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtUSDp(c.raw)+(c.raw<base*.5?' (נתון חלקי)':'')}}},scales:{x:{ticks:{maxTicksLimit:10,autoSkip:true,font:{size:10}},grid:{display:false}},y:{ticks:{callback:v=>'$'+(v/1000).toFixed(1)+'k',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}}}}});
+  renderBars('svc-bars',(D.services||[]).slice(0,8),'cat','cost');
+  renderBars('rg-bars',(D.rgs||[]).slice(0,8),'rg','cost');
+  renderBars('sub-bars',(D.subs||[]).slice(0,5),'sub','cost');
+  renderBars('reg-bars',(D.regions||[]).slice(0,5),'region','cost');
+  requestAnimationFrame(()=>{
+    new gridjs.Grid({columns:[{name:'שירות',data:r=>r.cat,width:'40%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'20%'},{name:'בייסליין',data:r=>fmtUSDp(r.base_avg),width:'20%'},{name:'Δ %',data:r=>gridjs.html(pillFor(r)),width:'20%'}],data:D.anom_svc||[],sort:true,search:true,pagination:{enabled:true,limit:8},style:{table:{width:'100%'}}}).render(freshGrid('anom-svc'));
+    wireRowClicks('anom-svc',D.anom_svc||[],r=>({dimLabel:'שירות',name:r.cat,baseValue:r.base_avg,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:'resource_name'}));
+    new gridjs.Grid({columns:[{name:rgsLabel,data:r=>r.rg,width:'45%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'18%'},{name:'בייסליין',data:r=>fmtUSDp(r.base),width:'18%'},{name:'Δ %',data:r=>gridjs.html(pillForRg(r)),width:'19%'}],data:D.anom_rg||[],sort:true,search:true,pagination:{enabled:true,limit:8},style:{table:{width:'100%'}}}).render(freshGrid('anom-rg'));
+    wireRowClicks('anom-rg',D.anom_rg||[],r=>({dimLabel:rgsLabel,name:r.rg,baseValue:r.base,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:tm.cloud==='aws'?'product_name':'meter_category'}));
+    if(D.anom_resource&&D.anom_resource.length){
+      new gridjs.Grid({columns:[{name:'Resource Name',data:r=>r.rname,width:'45%'},{name:'יומי כעת',data:r=>fmtUSDp(r.avg2),width:'18%'},{name:'בייסליין',data:r=>fmtUSDp(r.base),width:'18%'},{name:'Δ %',data:r=>gridjs.html(pillForRg(r)),width:'19%'}],data:D.anom_resource,sort:true,search:true,pagination:{enabled:true,limit:10},style:{table:{width:'100%'}}}).render(freshGrid('anom-resource'));
+      wireRowClicks('anom-resource',D.anom_resource,r=>({dimLabel:'Resource',name:r.rname,baseValue:r.base,avg2:r.avg2,delta:r.delta,pct:r.pct,daily_30d:r.daily_30d,breakdown:r.breakdown,last2_window:m.last2_window,subLabel:'meter_name'}));
+    }
+  });
+}
+function wireRowClicks(elId,data,mapToPayload){
+  setTimeout(()=>{
+    const grid=document.getElementById(elId);if(!grid)return;
+    const rows=grid.querySelectorAll('.gridjs-tr');
+    rows.forEach(tr=>{
+      if(tr.querySelector('th'))return;
+      tr.classList.add('clickable-row');
+      const firstTd=tr.querySelector('td');if(!firstTd)return;
+      const name=firstTd.textContent.trim();
+      const row=data.find(r=>{const v=r.cat||r.rg||r.rname;return v===name;});
+      if(row&&row.daily_30d&&row.daily_30d.length>0)tr.classList.add('has-drill');
+      tr.addEventListener('click',()=>{const row=data.find(r=>{const v=r.cat||r.rg||r.rname;return v===name;});if(row)openModal(mapToPayload(row));});
+    });
+    const mb=grid.querySelector('.gridjs-tbody');
+    if(mb){const obs=new MutationObserver(()=>wireRowClicks(elId,data,mapToPayload));obs.observe(mb,{childList:true,subtree:true});setTimeout(()=>obs.disconnect(),200);}
+  },80);
+}
+renderTabs();
+render(ALL.active||ALL.order[0]);
+})();
+</script>
+</body>
+</html>
