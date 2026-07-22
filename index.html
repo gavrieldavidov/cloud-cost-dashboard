@@ -205,7 +205,9 @@ function render(cid){
   (D.anom_svc||[]).filter(r=>r.base_avg===0&&r.avg2>0).forEach(r=>alerts.push({lvl:'up',title:`שירות חדש בחיוב: ${r.cat}`,detail:`${fmtUSDp(r.avg2)}/יום ממוצע. לא היה כלל בבייסליין 14 יום.`}));
   (D.anom_rg||[]).filter(r=>r.base===0&&r.avg2>0).forEach(r=>alerts.push({lvl:'up',title:`${rgsLabel} חדש: ${r.rg}`,detail:`${fmtUSDp(r.avg2)}/יום ממוצע. לא הופיע בבייסליין.`}));
   (D.anom_rg||[]).filter(r=>r.base>50&&r.pct!==null&&r.pct>=15&&r.delta>=20).forEach(r=>alerts.push({lvl:'warn',title:`${rgsLabel} עם קפיצה: ${r.rg}`,detail:`Δ=+${fmtUSDp(r.delta)} (${fmtPct(r.pct)})/יום מול בייסליין ${fmtUSDp(r.base)}.`}));
+  (D.anom_svc||[]).filter(r=>r.base_avg>50&&r.pct!==null&&r.pct>=15&&r.delta>=20).forEach(r=>alerts.push({lvl:'warn',title:`שירות עם קפיצה: ${r.cat}`,detail:`Δ=+${fmtUSDp(r.delta)} (${fmtPct(r.pct)})/יום מול בייסליין ${fmtUSDp(r.base_avg)}.`}));
   (D.anom_resource||[]).filter(r=>r.base===0&&r.avg2>=20).forEach(r=>alerts.push({lvl:'up',title:`משאב חדש: ${r.rname}`,detail:`${fmtUSDp(r.avg2)}/יום ממוצע. לא הופיע בבייסליין.`}));
+  (D.anom_resource||[]).filter(r=>r.base>50&&r.pct!==null&&r.pct>=15&&r.delta>=20).forEach(r=>alerts.push({lvl:'warn',title:`משאב עם קפיצה: ${r.rname}`,detail:`Δ=+${fmtUSDp(r.delta)} (${fmtPct(r.pct)})/יום מול בייסליין ${fmtUSDp(r.base)}.`}));
   document.getElementById('alerts').innerHTML=alerts.length?alerts.map(a=>`<div class="alert ${a.lvl}"><div><b>${a.title}</b><div style="color:var(--ink2);margin-top:2px">${a.detail}</div></div><span class="tag">${a.lvl==='up'?'התרעה':a.lvl==='warn'?'בדיקה':'מידע'}</span></div>`).join(''):`<div class="alert info"><div><b>אין אנומליות חריגות</b><div style="color:var(--ink2);margin-top:2px">העלויות יציבות מול הבייסליין.</div></div><span class="tag">תקין</span></div>`;
   const last2Set=new Set(m.last2_window||[]);
   const labels=(D.daily||[]).map(r=>r.d),data=(D.daily||[]).map(r=>r.cost);
